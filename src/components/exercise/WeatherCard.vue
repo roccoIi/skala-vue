@@ -1,7 +1,11 @@
 <script setup>
+// [홈 화면에 표시되는 도시 카드]
+// weatherStore.filteredCityLocation의 원소 하나(city)를 props로 받아 배경 이미지/지역명만 보여주고,
+// 클릭 시 실제 날씨 데이터 조회는 도시 상세정보 내에서 진행한다.
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
+// city.id(예: 'city_01')와 파일명이 매칭되는 이미지를 빌드 타임에 한 번에 로드해둔다.
 const cityImages = import.meta.glob('/src/asset/city_images/*.jpg', {
   eager: true,
   import: 'default',
@@ -9,17 +13,15 @@ const cityImages = import.meta.glob('/src/asset/city_images/*.jpg', {
 
 const props = defineProps({
   city: {
+    // WeatherHomeView(부모)가 filteredCityLocation에 for문을 돌며 넘겨주는 도시 데이터
     type: Object,
     required: true,
   },
-  selected: {
-    type: Boolean,
-    default: false,
-  },
 })
 
-const router = useRouter()
+const router = useRouter() // 카드 클릭 시 상세 페이지로 이동시키기 위함
 
+// props.city.id와 일치하는 배경 이미지를 cityImages에서 찾아 카드 배경으로 사용
 const cardImage = computed(() => {
   const entry = Object.entries(cityImages).find(([path]) =>
     path.endsWith(`/${props.city.id}.jpg`),
@@ -27,8 +29,11 @@ const cardImage = computed(() => {
   return entry ? entry[1] : null
 })
 
+// 카드 하단에 표시할 위경도 좌표 문자열 (소수점 2자리)
 const coordText = computed(() => `${props.city.lat.toFixed(2)}°N · ${props.city.lon.toFixed(2)}°E`)
 
+// 카드 클릭 → /detail/:id 라우트로 이동 (id = city.id).
+// WeatherDetailView가 이 id를 route.params에서 읽어 cityLocation과 매칭한 뒤 날씨를 조회한다.
 const moveDetail = () => {
   router.push({
     name: 'detail',

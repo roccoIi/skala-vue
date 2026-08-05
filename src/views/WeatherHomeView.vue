@@ -1,4 +1,7 @@
 <script setup>
+// 홈(도시 목록) 화면.
+// 데이터 흐름: SearchBar가searchKeyword 갱신
+//            → weatherStore.filteredCityLocation(computed)가 재계산 → 카드 그리드 렌더링.
 import { useWeatherStore } from '@/stores/weatherStore.js'
 import CurrentLocationCard from '../components/exercise/CurrentLocationCard.vue'
 import SearchBar from '../components/exercise/SearchBar.vue'
@@ -6,9 +9,6 @@ import WeatherCard from '../components/exercise/WeatherCard.vue'
 
 const weatherStore = useWeatherStore()
 
-const onUpdateQuery = (value) => {
-  weatherStore.searchKeyword = value
-}
 </script>
 
 <template>
@@ -18,7 +18,7 @@ const onUpdateQuery = (value) => {
         <p class="eyebrow">Weather Dashboard</p>
         <h2 class="page-title">대한민국 주요도시 날씨</h2>
       </div>
-      <SearchBar :query="weatherStore.searchKeyword" @updateQuery="onUpdateQuery" />
+      <SearchBar />
     </header>
 
     <p v-if="weatherStore.searchKeyword" class="result-count">

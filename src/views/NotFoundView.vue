@@ -1,8 +1,10 @@
 <script setup>
+// [404 화면]
+// WeatherDetailView에서 존재하지 않는 city id로 들어왔을 때 router.replace로 이곳에 도착한다.
 import { useRouter } from 'vue-router'
 import notFoundCat from '@/asset/404_cat.png'
 
-const router = useRouter()
+const router = useRouter() // "대시보드로 돌아가기" 버튼 클릭 시 홈으로 이동시키기 위함
 const goBackRoot = () => {
   router.push('/')
 }

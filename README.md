@@ -1,44 +1,32 @@
 # skala-vue
 
-This template should help get you started developing with Vue 3 in Vite.
+Vue 3 + Pinia + Vue Router로 만든 대한민국 주요 도시 날씨 대시보드입니다. OpenWeather API를 이용해 실시간 날씨와 5일 예보를 조회할 수 있습니다.
 
-## Recommended IDE Setup
+## 구현한 기능
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+- **도시별 날씨 목록**: 서울/경기/강원/충청/경상/전라/제주 등 20개 주요 도시의 날씨 카드를 그리드로 표시
+- **도시 검색**: Element Plus의 `el-autocomplete`를 활용해 지역명/도시명 키워드로 목록 실시간 필터링, 자동완성 드롭다운 및 검색 결과 개수 표시
+- **현재 위치 날씨**: 브라우저 Geolocation API로 현재 위치를 조회해 지도(OpenStreetMap)와 함께 실시간 날씨 표시
+- **도시 상세 페이지**: 도시 클릭 시 상세 페이지로 이동, 현재 날씨/체감온도/습도/기압/가시거리/구름량/일출·일몰 정보와 5일치 3시간 간격 기온 예보 차트 제공
+- **섭씨/화씨 단위 전환**: 전역 상태로 관리되어 목록·상세 페이지 어디서든 동일하게 적용
+- **404 페이지**: 존재하지 않는 도시 ID나 잘못된 경로 접근 시 안내 페이지로 처리
+- **반응형 라우팅**: `vue-router`의 동적 라우트(`/detail/:id`)와 lazy loading 적용
 
-## Recommended Browser Setup
+## 4일간 개발하며 어려웠던 점
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+### 브라우저 위치정보(Geolocation) 처리
 
-## Customize configuration
+현재 위치 날씨를 보여주기 위해 `navigator.geolocation`을 사용했는데, 위치 권한 허용 여부나 브라우저/환경에 따라 동작이 달라 처리가 까다로웠습니다. `CurrentLocationCard` 컴포넌트에 `loading / ready / error` 상태를 두고, 위치 정보를 받아온 뒤에만 날씨 데이터를 요청하도록 흐름을 분리해 예외 상황에서도 화면이 멈추지 않도록 했습니다.
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### Props/Emit 기반 상태 관리의 한계
 
-## Project Setup
+초기에는 더미 날씨 데이터를 부모 컴포넌트가 `ref`로 들고 있다가 `props`로 자식에게 내려주고, 검색어 같은 입력값은 `emit`으로 다시 부모에 올려 갱신하는 방식으로 구현했습니다. 컴포넌트가 늘어날수록 데이터를 필요로 하는 쪽과 실제로 들고 있는 쪽이 멀어지면서, 중간 컴포넌트들이 쓰지도 않을 props/emit을 계속 전달만 해주는 코드가 늘고 데이터 흐름을 추적하기 어려워졌습니다.
 
-```sh
-npm install
-```
+Pinia로 상태 관리를 전환하면서 이 문제를 해결했습니다.
 
-### Compile and Hot-Reload for Development
+- **단일 관리**: 도시 목록, 검색어, 날씨/예보 데이터, 온도 단위를 모두 `weatherStore` 하나로 모으면서, 어떤 컴포넌트든 `useWeatherStore()`만 호출하면 동일한 상태에 접근하게 되었습니다. props를 몇 단계씩 내려보내는 복잡한 상황을 해결할 수 있었습니다.
+- **역할 분리**: API 호출과 이를 통한 데이터를 스토어 안에 두면서, 컴포넌트는 화면을 그리는 역할만 담당하도록 역할을 분리할 수 있었습니다.
 
-```sh
-npm run dev
-```
+### OpenWeather API 연동
 
-### Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+날씨 정보 API와 예보 API를 각각 호출해야 했고, 도시를 바꿀 때마다 이전 데이터가 잠깐 남아있는 문제가 있었습니다. Pinia 스토어(`weatherStore`)에서 `getWeatherInfo`, `getForecastInfo` 두 함수로 API 호출을 분리하고, 상세 페이지 진입 시 `watchEffect`로 기존 값을 초기화한 뒤 새로 요청하도록 해 화면 전환 시 데이터가 꼬이지 않게 했습니다. 또한 API 키가 없는 배포 환경에서는 조용히 실패하지 않도록 `try/catch`로 에러 상태를 별도로 처리했습니다.

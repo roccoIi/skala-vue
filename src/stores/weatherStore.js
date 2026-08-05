@@ -2,9 +2,12 @@ import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
+// [상태 저장소]
+// - 여러 화면(WeatherHomeView, WeatherDetailView 등)에서 공통으로 읽고 사용하는 데이터 보관
 export const useWeatherStore = defineStore('weather', () => {
-  const apiKey = import.meta.env.VITE_WEATHER_API
+  const apiKey = import.meta.env.VITE_WEATHER_API // .env에 등록된 OpenWeather API 키 (getWeatherInfo/getForecastInfo 호출에 사용)
 
+  // 정적 도시 좌표 데이터 (API 호출 없이 앱 시작 시점부터 사용 가능).
   // 서울(강남), 경기(파주, 수원), 강원(강릉, 춘천), 충북(충주, 청주), 충남(서산, 대전), 경북(안동, 구미), 대구, 울산, 부산, 전북(전주, 광주, 목포) 제주, 울릉도, 독도
   const cityLocation = [
     { id: 'city_01', region: '서울특별시', name: '서울', lat: 37.5172, lon: 127.0495 },
@@ -29,8 +32,13 @@ export const useWeatherStore = defineStore('weather', () => {
     { id: 'city_20', region: '경상북도', name: '독도', lat: 37.2417, lon: 131.8611 },
   ]
 
+  // 현재 화면에 표시 중인 "실시간 날씨" 단건 데이터.
+  // CurrentLocationCard(내 위치)와 WeatherDetailView(도시 상세)가 각각 위경도를 넘겨 이 값을 채운다.
+  // 두 화면이 같은 필드를 공유하므로, 화면 전환 시 이전 값이 잠깐 남지 않도록 호출 측에서 null로 초기화 후 재요청
   const weatherInfoDetail = ref(null)
 
+  // lat/lon → OpenWeather 현재 날씨 API 호출 → weatherInfoDetail에 저장.
+  // 실패(주로 API 키 미설정/네트워크 오류) 시 사용자에게 alert만 띄우고 상태는 이전 값을 유지한다.
   const getWeatherInfo = async (lat, lon) => {
     try {
       const baseURL = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&lang=kr&units=metric`
@@ -41,8 +49,11 @@ export const useWeatherStore = defineStore('weather', () => {
     }
   }
 
+  // 5일치 3시간 간격 예보 객체
   const forecastList = ref(null)
 
+  // lat/lon → OpenWeather 5일 예보 API 호출 → forecastList에 저장.
+  // 실패 시 null이 아닌 빈 배열로 두어, 화면에서 "로딩 중"과 "조회 실패"를 구분해서 보여줄 수 있게 한다.
   const getForecastInfo = async (lat, lon) => {
     try {
       const forecastURL = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&lang=kr&units=metric`
@@ -53,9 +64,11 @@ export const useWeatherStore = defineStore('weather', () => {
     }
   }
 
+  // SearchBar(el-autocomplete)의 입력값이 이 필드로 흘러들어온다 (SearchBar → WeatherHomeView emit).
   const searchKeyword = ref('')
 
-  const filteredCityLocation = computed(() => {
+  // searchKeyword가 바뀔 때마다 cityLocation을 재필터링
+    const filteredCityLocation = computed(() => {
     const keyword = searchKeyword.value.trim()
     if (keyword === '') return cityLocation
     return cityLocation.filter(
@@ -63,17 +76,22 @@ export const useWeatherStore = defineStore('weather', () => {
     )
   })
 
+  // 섭씨/화씨 표시 단위. UnitToggler 버튼 클릭이 changeCelsius를 호출해 이 값을 뒤집으면,
+  // 이 값을 참조하는 모든 화면(홈 카드, 현재 위치, 상세 페이지)의 온도 표시가 함께 갱신된다.
   const celsius = ref(true)
 
+  // celsius 값을 반전시켜 단위를 전환. UnitToggler에서 호출
   const changeCelsius = () => {
     celsius.value = !celsius.value
   }
 
+  // API 응답은 항상 섭씨(metric) 기준으로 오므로, celsius가 false일 때만 화씨로 변환해서 보여준다.
   const displayTemp = (temp) => {
     if (!celsius.value) return Math.round((temp * 9) / 5 + 32)
     else return temp
   }
 
+  // 현재 단위에 맞는 기호('°C'/'°F'). displayTemp와 짝을 이뤄 화면 곳곳의 온도 표기에 사용
   const unitSymbol = computed(() => (celsius.value ? '°C' : '°F'))
 
   return {

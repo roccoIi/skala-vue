@@ -1,10 +1,13 @@
 <script setup>
+// 모든 페이지에서 공통으로 보이는 레이아웃(사이드바 + 콘텐츠 영역).
+// 실제 페이지 내용은 <RouterView/> 자리에 router/index.js가 정한 View 컴포넌트가 그려진다.
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import UnitToggler from './components/exercise/UnitToggler.vue'
 
-const route = useRoute()
+const route = useRoute() // 현재 URL 경로를 읽어 사이드바 활성 메뉴 판단에 사용
 
+// 현재 경로에 맞춰 사이드바 네비게이션 하이라이트(초록 인디케이터) 위치를 계산
 const activeIndex = computed(() => {
   if (route.path === '/') return 0
   if (route.path.startsWith('/about')) return 1
@@ -12,6 +15,7 @@ const activeIndex = computed(() => {
   return -1
 })
 
+// 사이드바 하단에 표시할 오늘 날짜 문자열 (예: '2026년 8월 5일 수'). 컴포넌트 생성 시 한 번만 계산
 const today = new Date().toLocaleDateString('ko-KR', {
   year: 'numeric',
   month: 'long',

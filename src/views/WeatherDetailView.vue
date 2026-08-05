@@ -1,32 +1,44 @@
 <script setup>
+// [도시 상세 화면]
+// 데이터 흐름:
+// 1) URL의 :id로 cityLocation에서 해당 city 찾기
+// 2) city가 정해지면 watchEffect가 스토어의 weatherInfoDetail/forecastList를 비우고
+//    getWeatherInfo/getForecastInfo를 재호출 → 응답이 스토어에 채워지면 화면이 다시 렌더링
+// 3) city를 못 찾으면(잘못된 id) notFound 라우트로 리다이렉트
 import { computed, watchEffect } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useWeatherStore } from '@/stores/weatherStore.js'
 
+const weatherStore = useWeatherStore() 
+const route = useRoute() 
+const router = useRouter()
+
+// city id별 배경 이미지 파일들을 가져옴
 const cityImages = import.meta.glob('/src/asset/city_images/*.jpg', {
   eager: true,
   import: 'default',
 })
 
-const weatherStore = useWeatherStore()
-const route = useRoute()
-const router = useRouter()
-
+// WeatherCard 클릭 시 router.push로 넘어온 id와 도시별 좌표 데이터 매칭
 const city = computed(() => weatherStore.cityLocation.find((c) => c.id === route.params.id))
 
+// city.id와 일치하는 파일명을 cityImages에서 찾아 배경으로 사용
 const heroImage = computed(() => {
   if (!city.value) return null
   const entry = Object.entries(cityImages).find(([path]) => path.endsWith(`/${city.value.id}.jpg`))
   return entry ? entry[1] : null
 })
 
+// watchEffect가 호출한 getWeatherInfo 응답 결과
 const weather = computed(() => weatherStore.weatherInfoDetail)
 
+// OpenWeather 아이콘 이미지 URL 조립. weather가 아직 없으면 빈 문자열
 const iconUrl = computed(() => {
   const icon = weather.value?.weather?.[0]?.icon
   return icon ? `https://openweathermap.org/img/wn/${icon}@2x.png` : ''
 })
 
+// UNIX 타임스탬프(초)를 'HH:MM' 형식의 한국어 시각 문자열로 변환 (일출/일몰/업데이트 시각 표시에 공통 사용)
 const formatTime = (unixSeconds) => {
   if (!unixSeconds) return '-'
   return new Date(unixSeconds * 1000).toLocaleTimeString('ko-KR', {
@@ -35,8 +47,10 @@ const formatTime = (unixSeconds) => {
   })
 }
 
+// weather.dt(응답이 온 시각)를 화면 상단에 표시
 const updatedAt = computed(() => formatTime(weather.value?.dt))
 
+// 오늘의 최저~최고 기온 구간에서 현재 기온의 상대 위치(0~100%). "일교차 위치" 위젯의 마커 좌표로 사용
 const tempRangePercent = computed(() => {
   if (!weather.value) return 0
   const { temp, temp_min: min, temp_max: max } = weather.value.main
@@ -44,28 +58,35 @@ const tempRangePercent = computed(() => {
   return Math.min(100, Math.max(0, ((temp - min) / (max - min)) * 100))
 })
 
+// 풍향(도 단위). "풍향 · 풍속" 위젯의 나침반 바늘 회전 각도로 사용
 const windDeg = computed(() => weather.value?.wind?.deg ?? 0)
 
+// weatherStore.forecastList를 그대로 참조 — 예보 차트가 순회하는 원본 데이터
 const forecast = computed(() => weatherStore.forecastList)
-const chartHeight = 100
+const chartHeight = 100 // 예보 막대그래프 트랙의 최대 높이(px), barHeight 계산의 기준값
 
+// 예보 목록 중 최저/최고 기온을 구해 막대그래프 높이의 상대적 비율 계산에 사용
 const tempBounds = computed(() => {
   if (!forecast.value?.length) return { min: 0, max: 1 }
   const temps = forecast.value.map((item) => item.main.temp)
   return { min: Math.min(...temps), max: Math.max(...temps) }
 })
 
+// 예보 항목 하나(item)의 기온을 tempBounds 구간에 비례한 막대 높이(px)로 변환
 const barHeight = (item) => {
   const { min, max } = tempBounds.value
   const range = max - min || 1
   return Math.max(4, ((item.main.temp - min) / range) * chartHeight)
 }
 
+// 예보 항목의 UNIX 타임스탬프를 '일 시' 형식(예: '6일 15시')으로 변환
 const formatSlot = (unixSeconds) => {
   const d = new Date(unixSeconds * 1000)
   return `${d.getDate()}일 ${d.getHours()}시`
 }
 
+// city.value가 바뀔 때마다(다른 도시 상세로 바로 이동하는 경우 포함) 자동 재실행
+// 이전 도시의 날씨/예보가 잠깐이라도 화면에 남지 않도록 먼저 null로 비운 뒤 새로 요청한다.
 watchEffect(() => {
   if (!city.value) {
     router.replace({ name: 'notFound' })

@@ -1,8 +1,12 @@
 <script setup>
+//[섭씨/화씨 전환 스위치]
+// 클릭 → weatherStore.changeCelsius()가 store의 celsius 값을 토글
+//      → celsius를 참조하는 모든 화면(홈 카드, 현재 위치, 상세 페이지)의 온도 표시가 즉시 갱신
 import { useWeatherStore } from '@/stores/weatherStore.js'
 
 const weatherStore = useWeatherStore()
 
+// 스위치 클릭 시 스토어의 changeCelsius를 호출해 전역 온도 단위를 토글
 const cgCelsius = () => {
   weatherStore.changeCelsius()
 }

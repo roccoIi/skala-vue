@@ -15,6 +15,8 @@ const router = createRouter({
       component: () => import('../views/WeatherAboutView.vue'), //Dynamic Loading을 적용하면서 Lazy Loading적용
     },
     {
+      // :id는 WeatherCard 클릭 시 city.id(예: 'city_01')로 채워지고,
+      // WeatherDetailView에서 route.params.id로 읽어 cityLocation 배열과 매칭한다.
       path: '/detail/:id',
       name: 'detail',
       component: () => import('../views/WeatherDetailView.vue'),

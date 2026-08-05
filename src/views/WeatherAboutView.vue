@@ -1,4 +1,5 @@
 <script setup>
+// 프로젝트 소개용 정적 페이지.
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -6,12 +7,14 @@ const goRootPage = () => {
   router.push('/')
 }
 
+// 상단 통계 카드 3개에 표시할 값 (하드코딩된 소개용 수치)
 const stats = [
   { label: '등록된 도시', value: '20곳' },
   { label: '연동 API', value: '3개' },
   { label: '예보 간격', value: '3시간' },
 ]
 
+// 개발 단계별 설명을 나열하는 타임라인 목록 (하드코딩)
 const timeline = [
   { period: '1단계', text: '도시 이름과 임의의 기온을 나열하는 정적 목록으로 시작' },
   { period: '2단계', text: '지역·좌표 데이터를 분리하고, 검색으로 필터링되는 카드 그리드로 전환' },
