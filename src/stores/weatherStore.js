@@ -44,6 +44,16 @@ export const useWeatherStore = defineStore('weather', () => {
       const baseURL = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&lang=kr&units=metric`
       const response = await axios.get(baseURL)
       weatherInfoDetail.value = response.data
+      
+      // 한글 이름 있는지 확인
+      try {
+        const geoURL = `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${apiKey}`
+        const geoResponse = await axios.get(geoURL)
+        const koreanName = geoResponse.data?.[0]?.local_names?.ko
+        if (koreanName) weatherInfoDetail.value.name = koreanName
+      } catch {
+        // 지명 보정 실패 시 무시하고 원래 이름 유지
+      }
     } catch {
       alert('주소를 확인해주세요.')
     }
