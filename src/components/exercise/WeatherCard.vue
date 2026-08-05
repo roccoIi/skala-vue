@@ -4,6 +4,7 @@
 // 클릭 시 실제 날씨 데이터 조회는 도시 상세정보 내에서 진행한다.
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+const router = useRouter()
 
 // city.id(예: 'city_01')와 파일명이 매칭되는 이미지를 빌드 타임에 한 번에 로드해둔다.
 const cityImages = import.meta.glob('/src/asset/city_images/*.jpg', {
@@ -18,8 +19,6 @@ const props = defineProps({
     required: true,
   },
 })
-
-const router = useRouter() // 카드 클릭 시 상세 페이지로 이동시키기 위함
 
 // props.city.id와 일치하는 배경 이미지를 cityImages에서 찾아 카드 배경으로 사용
 const cardImage = computed(() => {
