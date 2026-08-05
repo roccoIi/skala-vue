@@ -30,3 +30,11 @@ Pinia로 상태 관리를 전환하면서 이 문제를 해결했습니다.
 ### OpenWeather API 연동
 
 날씨 정보 API와 예보 API를 각각 호출해야 했고, 도시를 바꿀 때마다 이전 데이터가 잠깐 남아있는 문제가 있었습니다. Pinia 스토어(`weatherStore`)에서 `getWeatherInfo`, `getForecastInfo` 두 함수로 API 호출을 분리하고, 상세 페이지 진입 시 `watchEffect`로 기존 값을 초기화한 뒤 새로 요청하도록 해 화면 전환 시 데이터가 꼬이지 않게 했습니다. 또한 API 키가 없는 배포 환경에서는 조용히 실패하지 않도록 `try/catch`로 에러 상태를 별도로 처리했습니다.
+
+### 한글 IME 입력 시 검색 실시간 반영이 안 되던 문제
+
+`el-autocomplete`(도시 검색창)에 한글을 입력하면, 음절이 완성되기 전까지는 카드 목록 필터링이 반영되지 않는 문제가 있었습니다. 영문/숫자는 키 입력마다 바로 반영되는데 한글만 유독 완성된 글자 단위로 늦게 반영됐습니다.
+
+**원인**: `el-autocomplete`가 내부적으로 감싸고 있는 `el-input`은 한글 등 IME 조합이 필요한 입력 중(`isComposing === true`)에는 `update:model-value` 이벤트를 아예 발생시키지 않습니다. 완성되지 않은 음절이 값으로 잡히는 걸 막기 위한 Element Plus의 의도인데, 그 결과 이 이벤트를 구독해 `weatherStore.searchKeyword`를 갱신하던 로직도 조합이 끝날 때까지 실행되지 않았습니다.
+
+**해결**: `el-autocomplete`가 감싸고 있는 실제 `<input>` DOM 엘리먼트에 템플릿 ref(`inputRef.ref`)로 직접 접근해, 네이티브 `input` 이벤트 리스너를 별도로 붙였습니다. 네이티브 `input` 이벤트는 조합 중간 글자 단계에서도 매 키 입력마다 발생하기 때문에, 이 리스너 안에서 `event.target.value`를 바로 `weatherStore.searchKeyword`에 반영해 Element Plus의 조합 중 이벤트 억제 로직을 우회했습니다.
