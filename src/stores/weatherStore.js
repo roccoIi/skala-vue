@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import axios from 'axios'
 
 export const useWeatherStore = defineStore('weather', () => {
-  const apiKey = '81d985d082f46789a9c0d7e9700bc235'
+  const apiKey = import.meta.env.VITE_WEATHER_API
 
   // 서울(강남), 경기(파주, 수원), 강원(강릉, 춘천), 충북(충주, 청주), 충남(서산, 대전), 경북(안동, 구미), 대구, 울산, 부산, 전북(전주, 광주, 목포) 제주, 울릉도, 독도
   const cityLocation = [
